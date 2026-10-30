@@ -1,9 +1,9 @@
-"""SQLAlchemy ORM domain models for Projects, AgentConfigs, and ScenarioDefinitions."""
+"""SQLAlchemy ORM domain models for Projects, Agents, Scenarios, Runs, and Traces."""
 
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import JSON, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from faultline.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -24,6 +24,10 @@ class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
     scenarios: Mapped[list["ScenarioDefinition"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    runs: Mapped[list["ExecutionRun"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
     )
@@ -94,3 +98,80 @@ class ScenarioDefinition(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     project: Mapped["Project"] = relationship(back_populates="scenarios")
+
+
+class ExecutionRun(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Durable record of a single scenario execution against an agent configuration."""
+
+    __tablename__ = "execution_runs"
+
+    project_id: Mapped[UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    agent_config_id: Mapped[UUID] = mapped_column(
+        ForeignKey("agent_configs.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    scenario_id: Mapped[UUID] = mapped_column(
+        ForeignKey("scenario_definitions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    run_mode: Mapped[str] = mapped_column(
+        String(32), default="baseline", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    adapter_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    final_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    total_tokens: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
+    total_latency_ms: Mapped[float] = mapped_column(
+        Float, default=0.0, nullable=False)
+    run_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False,
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="runs")
+    trace_events: Mapped[list["TraceEvent"]] = relationship(
+        back_populates="run",
+        order_by="TraceEvent.step_index",
+        cascade="all, delete-orphan",
+    )
+
+
+class TraceEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Structured observable step captured during an ExecutionRun."""
+
+    __tablename__ = "trace_events"
+
+    run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("execution_runs.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    step_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    step_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    input_payload: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False,
+    )
+    output_payload: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False,
+    )
+    latency_ms: Mapped[float] = mapped_column(
+        Float, default=0.0, nullable=False)
+    tokens_used: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
+
+    run: Mapped["ExecutionRun"] = relationship(back_populates="trace_events")

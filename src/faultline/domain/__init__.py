@@ -1,5 +1,17 @@
 """Domain entities and ORM models."""
 
-from faultline.domain.models import AgentConfig, Project, ScenarioDefinition
+from faultline.domain.models import (
+    AgentConfig,
+    ExecutionRun,
+    Project,
+    ScenarioDefinition,
+    TraceEvent,
+)
 
-__all__ = ["AgentConfig", "Project", "ScenarioDefinition"]
+__all__ = [
+    "AgentConfig",
+    "ExecutionRun",
+    "Project",
+    "ScenarioDefinition",
+    "TraceEvent",
+]

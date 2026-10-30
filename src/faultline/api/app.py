@@ -11,10 +11,15 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from faultline import __version__
+from faultline.api.runs import create_run_router
 from faultline.api.scenarios import create_scenario_router
 from faultline.api.workspace import create_workspace_router
 from faultline.core.config import Settings, get_settings
-from faultline.core.errors import EntityConflictError, EntityNotFoundError
+from faultline.core.errors import (
+    EntityConflictError,
+    EntityNotFoundError,
+    UnsupportedAdapterError,
+)
 from faultline.db.session import (
     create_db_engine,
     create_session_factory,
@@ -121,6 +126,16 @@ def register_exception_handlers(app: FastAPI) -> None:
             content={"detail": exc.message},
         )
 
+    @app.exception_handler(UnsupportedAdapterError)
+    async def handle_unsupported_adapter(
+        _request: Request,
+        exc: UnsupportedAdapterError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": exc.message},
+        )
+
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Instantiate and configure the FastAPI application.
@@ -160,6 +175,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(create_workspace_router(),
                        prefix=active_settings.api_v1_prefix)
     app.include_router(create_scenario_router(),
+                       prefix=active_settings.api_v1_prefix)
+    app.include_router(create_run_router(),
                        prefix=active_settings.api_v1_prefix)
     return app
 
