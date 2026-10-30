@@ -8,6 +8,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import faultline.domain.models  # noqa: F401
 from faultline.core.config import get_settings
 from faultline.db.base import Base
 

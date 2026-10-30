@@ -6,8 +6,8 @@ This document tracks the incremental implementation phases for FAULTLINE. No pha
 
 - [x] **Phase 1:** Repository Bootstrap, Typed Configuration, Health API, and Test Harness *(Completed)*
 - [x] **Phase 2:** PostgreSQL Infrastructure, Async SQLAlchemy 2.x Engine, and Alembic Migrations *(Completed)*
-- [ ] **Phase 3:** Core Workspace Domain (`Project`, `AgentConfig`), Repositories, and CRUD APIs *(In Progress)*
-- [ ] **Phase 4:** Framework-Agnostic `AgentAdapter` Contract and `DeterministicMockAgent`
+- [x] **Phase 3:** Core Workspace Domain (`Project`, `AgentConfig`), Repositories, and CRUD APIs *(Completed)*
+- [ ] **Phase 4:** Framework-Agnostic `AgentAdapter` Contract and `DeterministicMockAgent` *(In Progress)*
 - [ ] **Phase 5:** Versioned `ScenarioDefinition` Schema, Validation, and Persistence
 - [ ] **Phase 6:** Baseline Execution Engine and Structured Observable Trace/Event Capture
 - [ ] **Phase 7:** Controlled Fault Injection Engine (HTTP 429, Timeouts, Malformed Payloads, Contradictions)

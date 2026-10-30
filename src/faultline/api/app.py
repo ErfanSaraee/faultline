@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from faultline import __version__
+from faultline.api.workspace import create_workspace_router
 from faultline.core.config import Settings, get_settings
+from faultline.core.errors import EntityConflictError, EntityNotFoundError
 from faultline.db.session import (
     create_db_engine,
     create_session_factory,
@@ -95,6 +97,30 @@ def create_health_router() -> APIRouter:
     return router
 
 
+def register_exception_handlers(app: FastAPI) -> None:
+    """Register domain-to-HTTP exception handlers on the FastAPI instance."""
+
+    @app.exception_handler(EntityNotFoundError)
+    async def handle_not_found(
+        _request: Request,
+        exc: EntityNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": exc.message},
+        )
+
+    @app.exception_handler(EntityConflictError)
+    async def handle_conflict(
+        _request: Request,
+        exc: EntityConflictError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"detail": exc.message},
+        )
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Instantiate and configure the FastAPI application.
 
@@ -127,7 +153,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if settings is not None:
         app.dependency_overrides[get_settings] = lambda: active_settings
 
+    register_exception_handlers(app)
     app.include_router(create_health_router(),
+                       prefix=active_settings.api_v1_prefix)
+    app.include_router(create_workspace_router(),
                        prefix=active_settings.api_v1_prefix)
     return app
 
