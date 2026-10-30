@@ -23,3 +23,12 @@ class EntityConflictError(FaultlineError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class UnsupportedAdapterError(FaultlineError):
+    """Raised when an agent adapter type is not registered or supported."""
+
+    def __init__(self, adapter_type: str) -> None:
+        super().__init__(
+            f"Agent adapter type '{adapter_type}' is not registered.")
+        self.adapter_type = adapter_type
