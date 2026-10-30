@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from faultline import __version__
+from faultline.api.scenarios import create_scenario_router
 from faultline.api.workspace import create_workspace_router
 from faultline.core.config import Settings, get_settings
 from faultline.core.errors import EntityConflictError, EntityNotFoundError
@@ -157,6 +158,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(create_health_router(),
                        prefix=active_settings.api_v1_prefix)
     app.include_router(create_workspace_router(),
+                       prefix=active_settings.api_v1_prefix)
+    app.include_router(create_scenario_router(),
                        prefix=active_settings.api_v1_prefix)
     return app
 

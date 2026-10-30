@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM domain models for Projects and Agent Configurations."""
+"""SQLAlchemy ORM domain models for Projects, AgentConfigs, and ScenarioDefinitions."""
 
 from typing import Any
 from uuid import UUID
@@ -20,6 +20,10 @@ class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     agent_configs: Mapped[list["AgentConfig"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    scenarios: Mapped[list["ScenarioDefinition"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
     )
@@ -60,3 +64,33 @@ class AgentConfig(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     project: Mapped["Project"] = relationship(back_populates="agent_configs")
+
+
+class ScenarioDefinition(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Versioned test scenario specification including fixtures, faults, and criteria."""
+
+    __tablename__ = "scenario_definitions"
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "name",
+            "version",
+            name="uq_scenario_definitions_project_name_version",
+        ),
+    )
+
+    project_id: Mapped[UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    spec: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False,
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="scenarios")

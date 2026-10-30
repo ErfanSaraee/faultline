@@ -9,6 +9,16 @@ from faultline.schemas.adapter import (
     ToolCallRequest,
     ToolCallResult,
 )
+from faultline.schemas.scenario import (
+    EvaluationCriteriaSpec,
+    FaultRuleSpec,
+    FaultType,
+    SafetyConstraintsSpec,
+    ScenarioCreate,
+    ScenarioResponse,
+    ScenarioSpec,
+    ToolFixture,
+)
 from faultline.schemas.workspace import (
     AdapterType,
     AgentConfigCreate,
@@ -25,9 +35,17 @@ __all__ = [
     "AgentStep",
     "AgentStepType",
     "AgentTaskInput",
+    "EvaluationCriteriaSpec",
     "ExecutionStatus",
+    "FaultRuleSpec",
+    "FaultType",
     "ProjectCreate",
     "ProjectResponse",
+    "SafetyConstraintsSpec",
+    "ScenarioCreate",
+    "ScenarioResponse",
+    "ScenarioSpec",
     "ToolCallRequest",
     "ToolCallResult",
+    "ToolFixture",
 ]
