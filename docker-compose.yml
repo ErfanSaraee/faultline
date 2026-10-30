@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: faultline-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: faultline
+      POSTGRES_PASSWORD: faultline_dev_password
+      POSTGRES_DB: faultline
+    ports:
+      - "5432:5432"
+    volumes:
+      - faultline_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U faultline -d faultline" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  faultline_pgdata:

@@ -33,6 +33,14 @@ class Settings(BaseSettings):
         default="/api/v1",
         description="URL prefix for v1 HTTP API endpoints",
     )
+    database_url: str = Field(
+        default="postgresql+asyncpg://faultline:faultline_dev_password@localhost:5432/faultline",
+        description="Async SQLAlchemy database connection URL",
+    )
+    db_echo: bool = Field(
+        default=False,
+        description="Enable SQLAlchemy SQL query logging",
+    )
 
 
 @lru_cache(maxsize=1)

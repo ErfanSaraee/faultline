@@ -1,21 +1,22 @@
 # FAULTLINE — Project State & Architecture Log
 
 ## 1. Current Implementation Status
-* **Current Phase:** Phase 1 Complete
+* **Current Phase:** Phase 2 Complete / Entering Phase 3
 * **Completed Phases:**
   * Phase 1 (Bootstrap, Typed Configuration, Health Check API, and Test Harness)
-* **Next Immediate Step:** Phase 2 (PostgreSQL Infrastructure, Async SQLAlchemy 2.x, and Alembic Migrations).
+  * Phase 2 (PostgreSQL Infrastructure, Async SQLAlchemy 2.x Engine, Alembic Setup, and Readiness Probe)
+* **Next Immediate Step:** Phase 3 (Core Workspace Domain: `Project` and `AgentConfig`, Repositories, Alembic Migration, and CRUD APIs).
 
 ## 2. Architectural Decisions Record (ADR Summary)
-* **ADR-001 (Modular Monolith Layout):** Adopted a `src/faultline` package layout to enforce strict import hygiene and clear module boundaries (`core`, `api`, and subsequent domain modules) within a single deployable backend unit.
-* **ADR-002 (Application Factory Pattern):** Used FastAPI's `create_app()` factory pattern in `faultline.api.app` instead of a reliance on module-level global state. This enables isolated app instances with custom settings per test case.
-* **ADR-003 (Validated Configuration):** Centralized environment configuration in `faultline.core.config.Settings` using `pydantic-settings` with the `FAULTLINE_` prefix and strict environment validation.
+* **ADR-001 (Modular Monolith Layout):** Adopted a `src/faultline` package layout to enforce strict import hygiene and clear module boundaries.
+* **ADR-002 (Application Factory Pattern):** Used FastAPI's `create_app()` factory pattern in `faultline.api.app` with lifespan resource cleanup.
+* **ADR-003 (Validated Configuration):** Centralized environment configuration in `faultline.core.config.Settings` using `pydantic-settings`.
+* **ADR-004 (Async SQLAlchemy 2.x & Naming Conventions):** Standardized on `AsyncEngine` and `async_sessionmaker` with `expire_on_commit=False` and deterministic constraint naming conventions (`POSTGRES_NAMING_CONVENTION`) to ensure reliable Alembic migrations.
+* **ADR-005 (Liveness vs. Readiness Separation):** Kept `/api/v1/health` as a lightweight process liveness check while adding `/api/v1/health/ready` to execute a database connectivity probe (`SELECT 1`), returning HTTP 503 when degraded.
 
 ## 3. Verified Test Coverage
-* `tests/test_health.py`:
-  * `test_health_endpoint_returns_expected_contract` (PASSED)
-  * `test_default_settings_validation` (PASSED)
-* Static analysis: Ruff (clean), Mypy strict (clean, 6 files).
+* `tests/test_health.py` (2 passed)
+* `tests/test_db.py` (3 passed: ORM roundtrip, readiness 200 OK, readiness 503 degraded)
 
 ## 4. Known Limitations
-* No database persistence is connected in Phase 1; `/api/v1/health` reports service liveness and configuration metadata only. Database readiness will be added in Phase 2.
+* No domain tables are migrated yet; `Project` and `AgentConfig` tables and migrations are introduced in Phase 3.
