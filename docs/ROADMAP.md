@@ -11,8 +11,8 @@ This document tracks the incremental implementation phases for FAULTLINE. No pha
 - [x] **Phase 5:** Versioned `ScenarioDefinition` Schema, Validation, and Persistence *(Completed)*
 - [x] **Phase 6:** Baseline Execution Engine and Structured Observable Trace/Event Capture *(Completed)*
 - [x] **Phase 7:** Controlled Fault Injection Engine (HTTP 429, Timeouts, Malformed Payloads, Contradictions) *(Completed)*
-- [ ] **Phase 8:** Evaluation Engine (Task Assertions, Tool Correctness, Latency, Cost, Reliability Scoring) *(In Progress)*
-- [ ] **Phase 9:** Recovery Policy Engine (Bounded Retries, Fallbacks) and Baseline-vs-Recovery Comparison
+- [x] **Phase 8:** Evaluation Engine (Task Assertions, Tool Correctness, Latency, Cost, Reliability Scoring) *(Completed)*
+- [ ] **Phase 9:** Recovery Policy Engine (Bounded Retries, Fallbacks) and Baseline-vs-Recovery Comparison *(In Progress)*
 - [ ] **Phase 10:** Replay Engine (Recorded Replay vs. Live Re-execution) and Execution Diffing
 - [ ] **Phase 11:** Evidence-Based Failure Diagnosis (Facts, Rule Classifications, Grounded Hypotheses)
 - [ ] **Phase 12:** Regression Test Generation, Human Approval Workflow, and Release Gates

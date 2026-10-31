@@ -1,9 +1,18 @@
-"""SQLAlchemy ORM domain models for Projects, Agents, Scenarios, Runs, and Traces."""
+"""SQLAlchemy ORM domain models for Projects, Agents, Scenarios, Runs, Traces, and Evaluations."""
 
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from faultline.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -143,6 +152,11 @@ class ExecutionRun(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         order_by="TraceEvent.step_index",
         cascade="all, delete-orphan",
     )
+    evaluation_report: Mapped["EvaluationReport | None"] = relationship(
+        back_populates="run",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class TraceEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -175,3 +189,42 @@ class TraceEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Integer, default=0, nullable=False)
 
     run: Mapped["ExecutionRun"] = relationship(back_populates="trace_events")
+
+
+class EvaluationReport(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Persisted evaluation outcome and reliability metrics for an ExecutionRun."""
+
+    __tablename__ = "evaluation_reports"
+
+    project_id: Mapped[UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("execution_runs.id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    scenario_id: Mapped[UUID] = mapped_column(
+        ForeignKey("scenario_definitions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    task_succeeded: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    reliability_score: Mapped[float] = mapped_column(Float, nullable=False)
+    metrics: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False,
+    )
+    assertion_results: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+
+    run: Mapped["ExecutionRun"] = relationship(
+        back_populates="evaluation_report")

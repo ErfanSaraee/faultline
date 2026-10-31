@@ -9,6 +9,12 @@ from faultline.schemas.adapter import (
     ToolCallRequest,
     ToolCallResult,
 )
+from faultline.schemas.evaluation import (
+    AssertionResult,
+    EvaluationMetrics,
+    EvaluationReportResponse,
+    RunComparisonResponse,
+)
 from faultline.schemas.execution import (
     ExecutionRunResponse,
     InjectedFaultEvent,
@@ -42,7 +48,10 @@ __all__ = [
     "AgentStep",
     "AgentStepType",
     "AgentTaskInput",
+    "AssertionResult",
     "EvaluationCriteriaSpec",
+    "EvaluationMetrics",
+    "EvaluationReportResponse",
     "ExecutionRunResponse",
     "ExecutionStatus",
     "FaultRuleSpec",
@@ -50,6 +59,7 @@ __all__ = [
     "InjectedFaultEvent",
     "ProjectCreate",
     "ProjectResponse",
+    "RunComparisonResponse",
     "RunCreateRequest",
     "RunMode",
     "SafetyConstraintsSpec",
