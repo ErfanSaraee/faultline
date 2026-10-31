@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM domain models for Projects, Agents, Scenarios, Runs, Traces, and Evaluations."""
+"""SQLAlchemy ORM domain models for Projects, Agents, Scenarios, Runs, Traces, and Reports."""
 
 from typing import Any
 from uuid import UUID
@@ -157,6 +157,11 @@ class ExecutionRun(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    diagnosis_report: Mapped["DiagnosisReport | None"] = relationship(
+        back_populates="run",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class TraceEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -228,3 +233,54 @@ class EvaluationReport(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     run: Mapped["ExecutionRun"] = relationship(
         back_populates="evaluation_report")
+
+
+class DiagnosisReport(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Evidence-grounded diagnosis report separating facts, rules, hypotheses, and human cause."""
+
+    __tablename__ = "diagnosis_reports"
+
+    project_id: Mapped[UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("execution_runs.id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    scenario_id: Mapped[UUID] = mapped_column(
+        ForeignKey("scenario_definitions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    confirmation_status: Mapped[str] = mapped_column(
+        String(32),
+        default="pending_human_review",
+        nullable=False,
+    )
+    observed_facts: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
+    rule_classifications: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
+    model_hypotheses: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
+    human_confirmed_cause: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+
+    run: Mapped["ExecutionRun"] = relationship(
+        back_populates="diagnosis_report")

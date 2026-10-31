@@ -2,6 +2,7 @@
 
 from faultline.domain.models import (
     AgentConfig,
+    DiagnosisReport,
     EvaluationReport,
     ExecutionRun,
     Project,
@@ -11,6 +12,7 @@ from faultline.domain.models import (
 
 __all__ = [
     "AgentConfig",
+    "DiagnosisReport",
     "EvaluationReport",
     "ExecutionRun",
     "Project",

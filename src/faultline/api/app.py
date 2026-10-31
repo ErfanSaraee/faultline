@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from faultline import __version__
+from faultline.api.diagnosis import create_diagnosis_router
 from faultline.api.evaluations import create_evaluation_router
 from faultline.api.replay import create_replay_router
 from faultline.api.runs import create_run_router
@@ -183,6 +184,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(create_evaluation_router(),
                        prefix=active_settings.api_v1_prefix)
     app.include_router(create_replay_router(),
+                       prefix=active_settings.api_v1_prefix)
+    app.include_router(create_diagnosis_router(),
                        prefix=active_settings.api_v1_prefix)
     return app
 
