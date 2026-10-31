@@ -1,5 +1,6 @@
-"""Execution engine orchestrating agent adapters, scenario fixtures, and fault injection."""
+"""Execution engine orchestrating adapters, fixtures, faults, and recovery policies."""
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from faultline.adapters.base import ToolHandler, default_mock_tool_handler
 from faultline.adapters.registry import AdapterRegistry
 from faultline.domain.models import ExecutionRun
+from faultline.execution.recovery import RecoveryToolInterceptor
 from faultline.faults.injector import FaultInjector
 from faultline.repositories.execution import ExecutionRunRepository
 from faultline.repositories.scenario import ScenarioRepository
@@ -40,7 +42,7 @@ def build_fixture_tool_handler(fixtures: list[ToolFixture]) -> ToolHandler:
 
 
 class BaselineExecutionEngine:
-    """Orchestrates baseline and fault-injected scenario runs with structured tracing."""
+    """Orchestrates baseline, fault-injected, and recovery runs with structured tracing."""
 
     def __init__(
         self,
@@ -84,11 +86,18 @@ class BaselineExecutionEngine:
         base_tool_handler = build_fixture_tool_handler(
             scenario_spec.tool_fixtures)
         fault_injector: FaultInjector | None = None
+        recovery_interceptor: RecoveryToolInterceptor | None = None
         active_tool_handler: ToolHandler = base_tool_handler
 
-        if request.run_mode == "fault_injected":
+        if request.run_mode in ("fault_injected", "recovery"):
             fault_injector = FaultInjector(scenario_spec.fault_rules)
             active_tool_handler = fault_injector.wrap(base_tool_handler)
+
+        if request.run_mode == "recovery" and request.recovery_policy is not None:
+            recovery_interceptor = RecoveryToolInterceptor(
+                request.recovery_policy)
+            active_tool_handler = recovery_interceptor.wrap(
+                active_tool_handler)
 
         execution_output = await adapter.execute(
             model_name=agent_config.model_name,
@@ -97,6 +106,11 @@ class BaselineExecutionEngine:
             tool_handler=active_tool_handler,
         )
 
+        if recovery_interceptor is not None:
+            execution_output = recovery_interceptor.expand_execution_output(
+                execution_output
+            )
+
         triggered_faults = (
             [event.model_dump(mode="json")
              for event in fault_injector.triggered_events]
@@ -104,7 +118,7 @@ class BaselineExecutionEngine:
             else []
         )
 
-        run_metadata = {
+        run_metadata: dict[str, Any] = {
             "agent_name": agent_config.name,
             "agent_version": agent_config.version,
             "scenario_name": scenario.name,
@@ -114,6 +128,17 @@ class BaselineExecutionEngine:
             "injected_fault_count": len(triggered_faults),
             "injected_faults": triggered_faults,
         }
+
+        if (
+            recovery_interceptor is not None
+            and request.recovery_policy is not None
+        ):
+            run_metadata["recovery_policy"] = request.recovery_policy.model_dump(
+                mode="json"
+            )
+            run_metadata["recovery_summary"] = recovery_interceptor.summary.model_dump(
+                mode="json"
+            )
 
         return await self._run_repo.create_from_output(
             project_id=project_id,

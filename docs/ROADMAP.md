@@ -12,8 +12,8 @@ This document tracks the incremental implementation phases for FAULTLINE. No pha
 - [x] **Phase 6:** Baseline Execution Engine and Structured Observable Trace/Event Capture *(Completed)*
 - [x] **Phase 7:** Controlled Fault Injection Engine (HTTP 429, Timeouts, Malformed Payloads, Contradictions) *(Completed)*
 - [x] **Phase 8:** Evaluation Engine (Task Assertions, Tool Correctness, Latency, Cost, Reliability Scoring) *(Completed)*
-- [ ] **Phase 9:** Recovery Policy Engine (Bounded Retries, Fallbacks) and Baseline-vs-Recovery Comparison *(In Progress)*
-- [ ] **Phase 10:** Replay Engine (Recorded Replay vs. Live Re-execution) and Execution Diffing
+- [x] **Phase 9:** Recovery Policy Engine (Bounded Retries, Fallbacks) and Baseline-vs-Recovery Comparison *(Completed)*
+- [ ] **Phase 10:** Replay Engine (Recorded Replay vs. Live Re-execution) and Execution Diffing *(In Progress)*
 - [ ] **Phase 11:** Evidence-Based Failure Diagnosis (Facts, Rule Classifications, Grounded Hypotheses)
 - [ ] **Phase 12:** Regression Test Generation, Human Approval Workflow, and Release Gates
 - [ ] **Phase 13:** Real Framework Integration — LangGraph Research Agent Adapter
