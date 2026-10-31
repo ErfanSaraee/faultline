@@ -1,4 +1,4 @@
-"""Pydantic v2 schemas for ExecutionRun and TraceEvent contracts."""
+"""Pydantic v2 schemas for ExecutionRun, TraceEvent, and InjectedFaultEvent contracts."""
 
 from datetime import datetime
 from typing import Any, Literal
@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from faultline.schemas.adapter import AgentStepType, ExecutionStatus
+from faultline.schemas.scenario import FaultType
 
 RunMode = Literal[
     "baseline",
@@ -15,6 +16,25 @@ RunMode = Literal[
     "recorded_replay",
     "live_replay",
 ]
+
+
+class InjectedFaultEvent(BaseModel):
+    """Record of a controlled fault that was actively triggered during a run."""
+
+    call_id: str = Field(description="Correlated tool call identifier")
+    tool_name: str = Field(
+        description="Target tool name where the fault occurred")
+    invocation_number: int = Field(
+        ge=1,
+        description="1-based invocation count for this tool when the fault triggered",
+    )
+    fault_type: FaultType = Field(description="Category of injected fault")
+    error_message: str = Field(
+        description="Diagnostic error message returned to the agent")
+    injected_latency_ms: float = Field(
+        ge=0.0,
+        description="Simulated latency in milliseconds injected by the fault rule",
+    )
 
 
 class RunCreateRequest(BaseModel):
@@ -26,9 +46,12 @@ class RunCreateRequest(BaseModel):
     scenario_id: UUID = Field(
         description="UUID of the versioned ScenarioDefinition to run"
     )
-    run_mode: Literal["baseline"] = Field(
+    run_mode: Literal["baseline", "fault_injected"] = Field(
         default="baseline",
-        description="Execution mode (Phase 6 supports baseline execution)",
+        description=(
+            "Execution mode ('baseline' ignores fault rules; "
+            "'fault_injected' activates them)"
+        ),
     )
 
 

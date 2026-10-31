@@ -1,4 +1,4 @@
-"""Baseline execution engine orchestrating agent adapters, scenario fixtures, and tracing."""
+"""Execution engine orchestrating agent adapters, scenario fixtures, and fault injection."""
 
 from uuid import UUID
 
@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from faultline.adapters.base import ToolHandler, default_mock_tool_handler
 from faultline.adapters.registry import AdapterRegistry
 from faultline.domain.models import ExecutionRun
+from faultline.faults.injector import FaultInjector
 from faultline.repositories.execution import ExecutionRunRepository
 from faultline.repositories.scenario import ScenarioRepository
 from faultline.repositories.workspace import AgentConfigRepository, ProjectRepository
@@ -39,7 +40,7 @@ def build_fixture_tool_handler(fixtures: list[ToolFixture]) -> ToolHandler:
 
 
 class BaselineExecutionEngine:
-    """Orchestrates baseline scenario runs and persists structured execution traces."""
+    """Orchestrates baseline and fault-injected scenario runs with structured tracing."""
 
     def __init__(
         self,
@@ -79,13 +80,28 @@ class BaselineExecutionEngine:
             context_data=scenario_spec.preconditions,
             max_steps=scenario_spec.safety_constraints.max_steps,
         )
-        tool_handler = build_fixture_tool_handler(scenario_spec.tool_fixtures)
+
+        base_tool_handler = build_fixture_tool_handler(
+            scenario_spec.tool_fixtures)
+        fault_injector: FaultInjector | None = None
+        active_tool_handler: ToolHandler = base_tool_handler
+
+        if request.run_mode == "fault_injected":
+            fault_injector = FaultInjector(scenario_spec.fault_rules)
+            active_tool_handler = fault_injector.wrap(base_tool_handler)
 
         execution_output = await adapter.execute(
             model_name=agent_config.model_name,
             config_payload=agent_config.config_payload,
             task_input=task_input,
-            tool_handler=tool_handler,
+            tool_handler=active_tool_handler,
+        )
+
+        triggered_faults = (
+            [event.model_dump(mode="json")
+             for event in fault_injector.triggered_events]
+            if fault_injector is not None
+            else []
         )
 
         run_metadata = {
@@ -94,6 +110,9 @@ class BaselineExecutionEngine:
             "scenario_name": scenario.name,
             "scenario_version": scenario.version,
             "max_steps": scenario_spec.safety_constraints.max_steps,
+            "configured_fault_rules": len(scenario_spec.fault_rules),
+            "injected_fault_count": len(triggered_faults),
+            "injected_faults": triggered_faults,
         }
 
         return await self._run_repo.create_from_output(

@@ -11,6 +11,7 @@ from faultline.schemas.adapter import (
 )
 from faultline.schemas.execution import (
     ExecutionRunResponse,
+    InjectedFaultEvent,
     RunCreateRequest,
     RunMode,
     TraceEventResponse,
@@ -46,6 +47,7 @@ __all__ = [
     "ExecutionStatus",
     "FaultRuleSpec",
     "FaultType",
+    "InjectedFaultEvent",
     "ProjectCreate",
     "ProjectResponse",
     "RunCreateRequest",
