@@ -32,3 +32,10 @@ class UnsupportedAdapterError(FaultlineError):
         super().__init__(
             f"Agent adapter type '{adapter_type}' is not registered.")
         self.adapter_type = adapter_type
+
+
+class PreconditionFailedError(FaultlineError):
+    """Raised when an operation violates required workflow state preconditions."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

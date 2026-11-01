@@ -36,6 +36,17 @@ from faultline.schemas.execution import (
     RunMode,
     TraceEventResponse,
 )
+from faultline.schemas.regression import (
+    RegressionApprovalStatus,
+    RegressionCandidateCreate,
+    RegressionCaseResponse,
+    RegressionCaseRunResult,
+    RegressionReviewRequest,
+    ReleaseDecision,
+    ReleaseGateCriteria,
+    ReleaseGateEvaluationResponse,
+    ReleaseGateRunRequest,
+)
 from faultline.schemas.replay import (
     DeviationType,
     ExecutionDiffResponse,
@@ -94,6 +105,15 @@ __all__ = [
     "RecoveryPolicySpec",
     "RecoveryStrategy",
     "RecoverySummary",
+    "RegressionApprovalStatus",
+    "RegressionCandidateCreate",
+    "RegressionCaseResponse",
+    "RegressionCaseRunResult",
+    "RegressionReviewRequest",
+    "ReleaseDecision",
+    "ReleaseGateCriteria",
+    "ReleaseGateEvaluationResponse",
+    "ReleaseGateRunRequest",
     "ReplayMode",
     "ReplayRequest",
     "ReplayRunResponse",

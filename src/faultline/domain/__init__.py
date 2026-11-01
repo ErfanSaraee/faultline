@@ -6,6 +6,7 @@ from faultline.domain.models import (
     EvaluationReport,
     ExecutionRun,
     Project,
+    RegressionCase,
     ScenarioDefinition,
     TraceEvent,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "EvaluationReport",
     "ExecutionRun",
     "Project",
+    "RegressionCase",
     "ScenarioDefinition",
     "TraceEvent",
 ]

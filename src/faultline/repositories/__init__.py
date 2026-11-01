@@ -3,6 +3,7 @@
 from faultline.repositories.diagnosis import DiagnosisRepository
 from faultline.repositories.evaluation import EvaluationRepository
 from faultline.repositories.execution import ExecutionRunRepository
+from faultline.repositories.regression import RegressionRepository
 from faultline.repositories.scenario import ScenarioRepository
 from faultline.repositories.workspace import AgentConfigRepository, ProjectRepository
 
@@ -12,5 +13,6 @@ __all__ = [
     "EvaluationRepository",
     "ExecutionRunRepository",
     "ProjectRepository",
+    "RegressionRepository",
     "ScenarioRepository",
 ]

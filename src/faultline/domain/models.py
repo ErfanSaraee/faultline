@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM domain models for Projects, Agents, Scenarios, Runs, Traces, and Reports."""
+"""SQLAlchemy ORM domain models for Projects, Agents, Scenarios, Runs, Reports, and Regression."""
 
 from typing import Any
 from uuid import UUID
@@ -37,6 +37,10 @@ class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
     runs: Mapped[list["ExecutionRun"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    regression_cases: Mapped[list["RegressionCase"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
     )
@@ -284,3 +288,50 @@ class DiagnosisReport(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     run: Mapped["ExecutionRun"] = relationship(
         back_populates="diagnosis_report")
+
+
+class RegressionCase(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Candidate or human-approved regression test case generated from a diagnosed failure."""
+
+    __tablename__ = "regression_cases"
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "name",
+            name="uq_regression_cases_project_name",
+        ),
+    )
+
+    project_id: Mapped[UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    source_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("execution_runs.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    scenario_id: Mapped[UUID] = mapped_column(
+        ForeignKey("scenario_definitions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    approval_status: Mapped[str] = mapped_column(
+        String(32),
+        default="candidate",
+        nullable=False,
+    )
+    confirmed_root_cause: Mapped[str] = mapped_column(Text, nullable=False)
+    classification_code: Mapped[str | None] = mapped_column(
+        String(128), nullable=True)
+    review_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False,
+    )
+
+    project: Mapped["Project"] = relationship(
+        back_populates="regression_cases")
