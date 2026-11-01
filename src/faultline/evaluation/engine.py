@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from faultline.domain.models import EvaluationReport, ExecutionRun
+from faultline.observability.telemetry import get_telemetry_manager
 from faultline.repositories.evaluation import EvaluationRepository
 from faultline.repositories.execution import ExecutionRunRepository
 from faultline.repositories.scenario import ScenarioRepository
@@ -30,6 +31,7 @@ class EvaluationEngine:
         self._scenario_repo = ScenarioRepository(session)
         self._run_repo = ExecutionRunRepository(session)
         self._eval_repo = EvaluationRepository(session)
+        self._telemetry = get_telemetry_manager()
 
     async def evaluate_run(
         self,
@@ -71,6 +73,9 @@ class EvaluationEngine:
             round(passed_count / total_count, 4) if total_count else 1.0
         )
         task_succeeded = all(a.passed for a in assertions)
+
+        self._telemetry.metrics.record_evaluation(
+            task_succeeded=task_succeeded)
 
         summary = (
             f"Evaluation {'PASSED' if task_succeeded else 'FAILED'}: "

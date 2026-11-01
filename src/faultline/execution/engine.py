@@ -1,4 +1,4 @@
-"""Execution engine orchestrating adapters, fixtures, faults, and recovery policies."""
+"""Execution engine orchestrating adapters, fixtures, faults, recovery, and telemetry."""
 
 from typing import Any
 from uuid import UUID
@@ -10,6 +10,7 @@ from faultline.adapters.registry import AdapterRegistry
 from faultline.domain.models import ExecutionRun
 from faultline.execution.recovery import RecoveryToolInterceptor
 from faultline.faults.injector import FaultInjector
+from faultline.observability.telemetry import get_telemetry_manager
 from faultline.repositories.execution import ExecutionRunRepository
 from faultline.repositories.scenario import ScenarioRepository
 from faultline.repositories.workspace import AgentConfigRepository, ProjectRepository
@@ -55,6 +56,7 @@ class BaselineExecutionEngine:
         self._agent_repo = AgentConfigRepository(session)
         self._scenario_repo = ScenarioRepository(session)
         self._run_repo = ExecutionRunRepository(session)
+        self._telemetry = get_telemetry_manager()
 
     async def execute_run(
         self,
@@ -117,6 +119,18 @@ class BaselineExecutionEngine:
             if fault_injector is not None
             else []
         )
+        fault_types = (
+            [event.fault_type for event in fault_injector.triggered_events]
+            if fault_injector is not None
+            else []
+        )
+
+        otel_trace_id = self._telemetry.record_execution_trace(
+            run_mode=request.run_mode,
+            scenario_name=scenario.name,
+            execution_output=execution_output,
+            injected_fault_types=fault_types,
+        )
 
         run_metadata: dict[str, Any] = {
             "agent_name": agent_config.name,
@@ -127,6 +141,7 @@ class BaselineExecutionEngine:
             "configured_fault_rules": len(scenario_spec.fault_rules),
             "injected_fault_count": len(triggered_faults),
             "injected_faults": triggered_faults,
+            "otel_trace_id": otel_trace_id,
         }
 
         if (
