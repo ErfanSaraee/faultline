@@ -16,6 +16,6 @@ This document tracks the incremental implementation phases for FAULTLINE. No pha
 - [x] **Phase 10:** Replay Engine (Recorded Replay vs. Live Re-execution) and Execution Diffing *(Completed)*
 - [x] **Phase 11:** Evidence-Based Failure Diagnosis (Facts, Rule Classifications, Grounded Hypotheses) *(Completed)*
 - [x] **Phase 12:** Regression Test Generation, Human Approval Workflow, and Release Gates *(Completed)*
-- [ ] **Phase 13:** Real Framework Integration — LangGraph Research Agent Adapter *(In Progress)*
-- [ ] **Phase 14:** Security Hardening, Secret/PII Redaction, and OpenTelemetry Integration
+- [x] **Phase 13:** Real Framework Integration — LangGraph Research Agent Adapter *(Completed)*
+- [ ] **Phase 14:** Security Hardening, Secret/PII Redaction, and OpenTelemetry Integration *(In Progress)*
 - [ ] **Phase 15:** Developer Workbench UI (React + TypeScript) & End-to-End MVP Verification

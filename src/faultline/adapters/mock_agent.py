@@ -79,6 +79,7 @@ class DeterministicMockAgent(AgentAdapter):
                 )
 
             tool_result = await active_handler(tool_request)
+            effective_tool = tool_result.tool_name or tool_request.tool_name
             step_status: Literal["ok", "error"] = (
                 "ok" if tool_result.status == "success" else "error"
             )
@@ -87,7 +88,7 @@ class DeterministicMockAgent(AgentAdapter):
                 AgentStep(
                     step_index=len(steps),
                     step_type="tool_call",
-                    name=tool_request.tool_name,
+                    name=effective_tool,
                     status=step_status,
                     input_payload={
                         "call_id": tool_request.call_id,
@@ -107,16 +108,16 @@ class DeterministicMockAgent(AgentAdapter):
                         steps=steps,
                         final_answer=None,
                         error_message=(
-                            f"Tool '{tool_request.tool_name}' failed with "
+                            f"Tool '{effective_tool}' failed with "
                             f"{tool_result.error_type or 'ToolError'}: "
                             f"{tool_result.error_message or 'Unknown error'}"
                         ),
                     )
                 collected_outputs.append(
-                    f"[fallback:{tool_request.tool_name}={tool_result.error_type}]"
+                    f"[fallback:{effective_tool}={tool_result.error_type}]"
                 )
             else:
-                collected_outputs.append(f"[ok:{tool_request.tool_name}]")
+                collected_outputs.append(f"[ok:{effective_tool}]")
 
         # 3. Final synthesis step
         if len(steps) >= task_input.max_steps:

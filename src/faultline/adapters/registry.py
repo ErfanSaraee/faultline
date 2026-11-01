@@ -1,6 +1,7 @@
 """Registry mapping adapter_type identifiers to concrete AgentAdapter instances."""
 
 from faultline.adapters.base import AgentAdapter
+from faultline.adapters.langgraph_agent import LangGraphResearchAdapter
 from faultline.adapters.mock_agent import DeterministicMockAgent
 from faultline.core.errors import UnsupportedAdapterError
 
@@ -11,6 +12,7 @@ class AdapterRegistry:
     def __init__(self) -> None:
         self._adapters: dict[str, AgentAdapter] = {}
         self.register(DeterministicMockAgent())
+        self.register(LangGraphResearchAdapter())
 
     def register(self, adapter: AgentAdapter) -> None:
         """Register an AgentAdapter instance under its adapter_type key."""
