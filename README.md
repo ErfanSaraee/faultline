@@ -34,6 +34,26 @@ When an AI agent fails in production, engineering teams need answers grounded in
 
 ---
 
+## Workbench Walkthrough & Visual Evidence
+
+### 1. Controlled Fault Injection & 4-Tier Failure Diagnosis
+Injecting a deterministic `HTTP_429_RATE_LIMIT` fault into `search_web` causes the unrecovered LangGraph agent to fail (`score=0.33`), triggering automatic fact extraction and `DEPENDENCY_RATE_LIMITED` rule classification.
+![Controlled Fault Injection and Failure Diagnosis](docs/assets/01-fault-injection-failure.png)
+
+### 2. Bounded Retry Recovery & Trace Expansion
+Executing the same scenario under a bounded `retry` recovery policy records both the initial failed tool call (`Step #1`) and the successful retry (`Step #2`), satisfying all 6 scenario assertions (`score=1.00`, `retries=1`).
+![Bounded Retry Recovery and Trace Timeline](docs/assets/02-bounded-retry-recovery.png)
+
+### 3. Human-Confirmed Regression Suite & Release Gate Rejection
+After human root-cause confirmation (`confirmed`), locking the failure into the regression suite automatically blocks the unrecovered agent release (`Release Verdict: REJECTED — Pass rate: 0%`).
+![Release Gate Rejection Verdict](docs/assets/03-release-gate-rejected.png)
+
+### 4. Automated Release Gate Approval with Recovery Policy
+Evaluating the release gate with the bounded retry recovery policy passes the regression suite and approves the release (`Release Verdict: APPROVED — Pass rate: 100%`).
+![Release Gate Approval Verdict](docs/assets/04-release-gate-approved.png)
+
+---
+
 ## System Architecture
 
 ```text
