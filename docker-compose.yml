@@ -4,18 +4,30 @@ services:
     container_name: faultline-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: faultline
-      POSTGRES_PASSWORD: faultline_dev_password
-      POSTGRES_DB: faultline
+      POSTGRES_USER: ${POSTGRES_USER:-faultline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-faultline_local_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-faultline}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - faultline_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U faultline -d faultline" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-faultline} -d ${POSTGRES_DB:-faultline}" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  api:
+    build: .
+    container_name: faultline-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FAULTLINE_ENV: development
+      FAULTLINE_DATABASE_URL: postgresql+asyncpg://faultline:faultline_local_dev@postgres:5432/faultline
+    ports:
+      - "8000:8000"
 
 volumes:
   faultline_pgdata:

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -177,6 +178,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=__version__,
         debug=active_settings.debug,
         lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     app.state.db_engine = db_engine

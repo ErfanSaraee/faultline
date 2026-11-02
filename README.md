@@ -2,41 +2,152 @@
 
 **Agent Reliability Engineering, Chaos Testing, Replay, Evaluation & Recovery Platform**
 
-FAULTLINE is an engineering workbench designed to systematically test, observe, evaluate, and improve the reliability of AI agents under controlled failure conditions.
+[![CI](https://img.shields.io/badge/tests-46%20passed-success)](#verification--test-suite)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](#technology-stack)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688)](#architecture)
+[![LangGraph](https://img.shields.io/badge/LangGraph-StateGraph-purple)](#architecture)
+[![Type Checked](https://img.shields.io/badge/mypy-strict-blue)](#verification--test-suite)
 
-Instead of asking whether an agent works when every dependency succeeds, FAULTLINE investigates how an agent behaves when tools fail, retrieval degrades, latencies spike, payloads become malformed, or recovery policies intervene.
+Ordinary AI agent demos show what happens when every tool, API, and dependency works on the first try. **FAULTLINE** systematically investigates what happens when things go wrong.
 
-## Core Engineering Pillars
+FAULTLINE is a developer-facing reliability engineering workbench for connecting tool-using AI agents, defining versioned test scenarios, injecting deterministic faults (HTTP 429 rate limits, timeouts, malformed JSON, contradictory evidence), capturing observable execution traces, scoring true task satisfaction vs. superficial completion, experimenting with bounded recovery policies, replaying and diffing runs, diagnosing root causes with verifiable evidence, and enforcing automated release gates.
 
-1. **Controlled Fault Injection:** Deterministic failure simulation across tools, retrieval layers, and model providers.
-2. **Structured Execution Tracing:** Observable step-by-step event capture without relying on hidden chain-of-thought.
-3. **Repeatable Evaluation:** Explicit assertions and reliability metrics beyond superficial response checks.
-4. **Replay & Comparison:** Clear separation between deterministic recorded replay and live re-execution.
-5. **Evidence-Based Diagnostics & Regression Gates:** Grounded failure classification and automated regression suites.
+---
 
-## Current Status
+## Why FAULTLINE?
 
-* **Active Phase:** Phase 1 — Repository Bootstrap, Configuration, and Health API.
-* See [`docs/ROADMAP.md`](docs/ROADMAP.md) and [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) for architectural decisions and phase tracking.
+When an AI agent fails in production, engineering teams need answers grounded in evidence rather than guesswork:
 
-## Quickstart (Development)
+1. **Controlled Fault Injection at the Tool Boundary:** Intercept agent tool calls deterministically on specific invocation counts (`trigger_on_call`) to inject `HTTP_429_RATE_LIMIT`, `TIMEOUT`, `MALFORMED_JSON`, `EMPTY_RESPONSE`, `CONTRADICTORY_DATA`, or `TOOL_UNAVAILABLE` without mutating agent code.
 
-### Prerequisites
-* Python 3.12+
-* [`uv`](https://docs.astral.sh/uv/) package manager
+2. **True Satisfaction vs. Superficial Completion:** An agent that swallows a tool timeout and returns a generic fallback string may report `status="completed"`, but FAULTLINE's `EvaluationEngine` catches the failure against explicit scenario assertions (`required_substrings`, `forbidden_substrings`, `expected_tools`, `forbidden_tools`, latency/token budgets).
 
-### Setup & Verification
+3. **Recovery Policy Trade-Off Analysis:** Retrying is not always free or effective. FAULTLINE tests bounded `retry`, `fallback_tool`, and `retry_then_fallback` policies while measuring the exact retry count, token overhead, and backoff latency added to the trace.
+
+4. **Explicit Determinism Boundaries in Replay:** Clearly separates **Recorded Replay** (reconstructing captured trace paths or feeding recorded `ToolCallResult` queues to an updated agent version) from **Live Re-execution**, complete with step-by-step trace diffing (`StepDeviation`).
+
+5. **Four-Tier Evidence-Based Failure Diagnosis:** Strictly separates **Observed Facts** (trace steps, errors, failed assertions), **Rule-Based Classifications**, **Unconfirmed Model Hypotheses** (`verification_status="unconfirmed_hypothesis"`), and **Human-Confirmed Root Causes**.
+
+6. **Human-Gated Regression Suites & Release Gates:** Converts human-confirmed failures into regression test candidates, requires human approval before activating them, and blocks unstable agent releases when pass rate, reliability score, or latency thresholds are breached.
+
+7. **Privacy & Security by Default:** Enforces `UPPER_SNAKE_CASE` environment variable secret references (rejecting raw API keys with HTTP 422) and recursively scrubs inline secrets (`sk-...`, `Bearer ...`), PII (emails, SSNs), and hidden Chain-of-Thought (`[REDACTED_COT]`) before database persistence.
+
+---
+
+## System Architecture
+
+```text
+Developer / React + TypeScript Workbench
+        │
+        ▼
+FastAPI REST API (/api/v1)
+        │
+        ├──► Workspace & Scenarios (Projects, Versioned AgentConfigs, Versioned ScenarioDefinitions)
+        │
+        ├──► Execution Orchestrator (BaselineExecutionEngine)
+        │        │
+        │        ├──► AdapterRegistry ──► LangGraphResearchAdapter (StateGraph) / DeterministicMockAgent
+        │        │
+        │        └──► ToolHandler Pipeline:
+        │               [RecoveryToolInterceptor] ──► [FaultInjector] ──► [FixtureToolHandler]
+        │
+        ├──► Evaluation & Comparison Engine (Assertions, Retry/Cost/Latency Metrics, Run Comparison)
+        │
+        ├──► Replay & Diff Engine (Recorded Replay vs. Live Replay, Step-by-Step Deviations)
+        │
+        ├──► 4-Tier Diagnosis Engine (Facts ──► Rules ──► Unconfirmed Hypotheses ──► Human Confirmation)
+        │
+        ├──► Regression Suite & Release Gate Engine (Candidate ──► Human Approval ──► Release Verdict)
+        │
+        └──► Storage Redaction & Observability (PayloadRedactor + PostgreSQL + OpenTelemetry Spans/Metrics)
+```
+
+---
+
+## End-to-End 15-Step Product Workflow
+
+1. **Create a Project:** Logical workspace isolating agents, scenarios, runs, and regression suites.
+
+2. **Register a Versioned AgentConfig:** Connect a `"langgraph"` (`StateGraph`) or `"mock"` agent adapter.
+
+3. **Define Agent Task & Expected Behavior:** Specify task prompt, tool fixtures, and explicit assertions.
+
+4. **Create a Versioned ScenarioDefinition:** Configure fault injection rules and safety constraints (`allow_live_external_actions=False`, `max_steps`).
+
+5. **Execute Baseline Run:** Verify healthy execution and capture structured `TraceEvent` steps.
+
+6. **Execute Controlled Fault Experiment:** Trigger `run_mode="fault_injected"` to test failure modes.
+
+7. **Capture Observable Execution Path:** Inspect per-step inputs, outputs, latencies, and token usage (with secrets/PII/CoT redacted).
+
+8. **Evaluate Against Explicit Criteria:** Score reliability, tool correctness, retries, latency, and USD cost.
+
+9. **Compare Baseline vs. Fault-Injected Runs:** Quantify degradation across score, latency, tokens, and failed assertions.
+
+10. **Test Recovery Policies:** Run `run_mode="recovery"` with bounded retries or fallback tool routing (`fallback_tool_map`).
+
+11. **Investigate & Diagnose Failures:** Generate a 4-tier diagnosis report and submit human root-cause confirmation.
+
+12. **Generate Candidate Regression Test:** Lock the confirmed failure into a `candidate` regression case.
+
+13. **Review & Approve Regression Case:** Human engineer approves (`approved`) the test into the project suite.
+
+14. **Execute Regression Suite:** Run all approved cases against a new agent version or recovery policy.
+
+15. **Enforce Release Gate:** Automatically reject (`rejected`) or approve (`approved`) the release based on explicit SLA thresholds.
+
+---
+
+## Technology Stack
+
+- **Backend:** Python 3.12+, FastAPI, Pydantic v2, SQLAlchemy 2.x (Async), Alembic, PostgreSQL (`asyncpg` / `aiosqlite` for isolated testing)
+- **Agent Integration:** Framework-agnostic `AgentAdapter` interface, `LangGraph` (`StateGraph`), `DeterministicMockAgent`
+- **Observability & Security:** OpenTelemetry SDK (`TracerProvider`, span correlation, bounded-cardinality metrics), recursive `PayloadRedactor`
+- **Frontend Workbench:** React 18, TypeScript, Vite
+- **Tooling & Quality Gates:** `uv`, Pytest (`pytest-asyncio`, HTTPX), Ruff, Mypy (strict mode), Docker Compose, GitHub Actions CI
+
+---
+
+## Quickstart
+
+### 1. Clone & Install Backend Dependencies
 
 ```bash
-# Synchronize virtual environment and dependencies
+git clone https://github.com/ErfanSaraee/faultline.git
+cd faultline
 uv sync
+```
 
-# Run test suite
-uv run pytest
+### 2. Run the Automated Verification Suite (46 Tests, Ruff, Mypy Strict)
 
-# Run linter and type checker
+```bash
+uv run pytest -v
 uv run ruff check .
 uv run mypy src tests
+```
 
-# Start local API server
-uv run uvicorn faultline.api.app:create_app --factory --reload
+### 3. Run the FastAPI Backend & React Workbench Locally
+
+Start PostgreSQL (via Docker Compose) or use a local database, run migrations, and start the API server:
+
+```bash
+docker compose up -d postgres
+uv run alembic upgrade head
+uv run uvicorn faultline.api.app:app --reload --port 8000
+```
+
+In a second terminal, launch the React + TypeScript Workbench UI:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` to interact with the FAULTLINE Workbench, or visit `http://127.0.0.1:8000/docs` for the OpenAPI specification.
+
+---
+
+## License
+
+MIT License — Created by **Erfan Saraee**.

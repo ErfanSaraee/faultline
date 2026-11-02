@@ -1,26 +1,33 @@
-# Python bytecode and caches
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+.venv/
+venv/
+ENV/
+dist/
+build/
+
+# Tool caches
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.coverage
+htmlcov/
 
-# Virtual environments
-.venv/
-venv/
-env/
-
-# Environment variables & secrets
+# Environment & local databases
 .env
-.env.local
+*.db
+*.sqlite3
 
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
+# Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
 
-# IDE and OS files
+# IDE & OS
 .vscode/
 .idea/
 .DS_Store
